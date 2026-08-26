@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Side-by-Side 360 Comparison</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background: #0e1b33; font-family: sans-serif; }
+    
+    #container { display: flex; width: 100vw; height: 100vh; position: relative; }
+    .pano-panel { flex: 1; height: 100%; position: relative; border-right: 2px solid #1b3f95; }
+    .pano-panel:last-child { border-right: none; }
+
+    .pano-label {
+      position: absolute; top: 12px; left: 12px; z-index: 10;
+      background: rgba(14, 27, 51, 0.85); color: #ffffff;
+      padding: 6px 12px; font-size: 13px; border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.15); pointer-events: none;
+    }
+
+    #reset-btn {
+      position: absolute; top: 12px; right: 12px; z-index: 20;
+      background: #1b3f95; color: #ffffff; border: 1px solid #019fc4;
+      padding: 8px 14px; font-size: 13px; font-weight: bold;
+      border-radius: 4px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+    #reset-btn:hover { background: #019fc4; color: #0e1b33; }
+  </style>
+  <script src="vendor/marzipano.js"></script>
+  <script src="data.js"></script>
+</head>
+<body>
+
+  <div id="container">
+    <button id="reset-btn">Reset View</button>
+    <div id="pano-left" class="pano-panel"><div class="pano-label" id="label-left">Earlier Photo</div></div>
+    <div id="pano-right" class="pano-panel"><div class="pano-label" id="label-right">Latest Photo</div></div>
+  </div>
+
+  <script>
+    // Load scene metadata automatically from data.js
+    var sceneDataL = APP_DATA.scenes[0];
+    var sceneDataR = APP_DATA.scenes[1];
+
+    // Initialize Viewers
+    var viewerL = new Marzipano.Viewer(document.getElementById('pano-left'));
+    var viewerR = new Marzipano.Viewer(document.getElementById('pano-right'));
+
+    // Create Cube Geometries
+    var geometryL = new Marzipano.CubeGeometry(sceneDataL.levels);
+    var geometryR = new Marzipano.CubeGeometry(sceneDataR.levels);
+
+    // View Limiters & Starting Angles
+    var limiter = Marzipano.RectilinearView.limit.traditional(sceneDataL.faceSize, 100 * Math.PI / 180);
+    var defaultViewParams = sceneDataL.initialViewParameters || { yaw: 0, pitch: 0, fov: Math.PI / 4 };
+    
+    var viewL = new Marzipano.RectilinearView(defaultViewParams, limiter);
+    var viewR = new Marzipano.RectilinearView(defaultViewParams, limiter);
+
+    // Image Sources using Cube Tile format
+    var sourceL = Marzipano.ImageUrlSource.fromString('tiles/' + sceneDataL.id + '/{z}/{f}/{y}/{x}.jpg');
+    var sourceR = Marzipano.ImageUrlSource.fromString('tiles/' + sceneDataR.id + '/{z}/{f}/{y}/{x}.jpg');
+
+    // Create & Display Scenes
+    var sceneL = viewerL.createScene({ source: sourceL, geometry: geometryL, view: viewL });
+    var sceneR = viewerR.createScene({ source: sourceR, geometry: geometryR, view: viewR });
+
+    sceneL.switchTo();
+    sceneR.switchTo();
+
+    // Set Labels
+    if (sceneDataL.name) document.getElementById('label-left').innerText = sceneDataL.name;
+    if (sceneDataR.name) document.getElementById('label-right').innerText = sceneDataR.name;
+
+    // Sync Movement
+    var isSyncing = false;
+    function syncViews(sourceView, targetView) {
+      if (isSyncing) return;
+      isSyncing = true;
+      targetView.setParameters(sourceView.parameters());
+      isSyncing = false;
+    }
+
+    viewL.addEventListener('change', function() { syncViews(viewL, viewR); });
+    viewR.addEventListener('change', function() { syncViews(viewR, viewL); });
+
+    // Reset View
+    document.getElementById('reset-btn').addEventListener('click', function() {
+      viewL.setParameters(defaultViewParams);
+      viewR.setParameters(defaultViewParams);
+    });
+  </script>
+
+</body>
+</html>
