@@ -1,8 +1,8 @@
 var APP_DATA = {
   "scenes": [
     {
-      "id": "0-img_20260709_103517_00_827",
-      "name": "IMG_20260709_103517_00_827",
+      "id": "0-well-08",
+      "name": "Well-08",
       "levels": [
         {
           "tileSize": 256,
@@ -24,8 +24,8 @@ var APP_DATA = {
       ],
       "faceSize": 2000,
       "initialViewParameters": {
-        "yaw": -0.8877339133419522,
-        "pitch": 0.6146574773815132,
+        "yaw": -0.7202735560121845,
+        "pitch": 0.6128536257888015,
         "fov": 1.5707963267948966
       },
       "linkHotspots": [],
@@ -36,7 +36,7 @@ var APP_DATA = {
   "settings": {
     "mouseViewMode": "drag",
     "autorotateEnabled": true,
-    "fullscreenButton": false,
+    "fullscreenButton": true,
     "viewControlButtons": false
   }
 };
