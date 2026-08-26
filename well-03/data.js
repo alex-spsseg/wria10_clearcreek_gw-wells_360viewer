@@ -1,8 +1,8 @@
 var APP_DATA = {
   "scenes": [
     {
-      "id": "0-img_20260709_091518_00_823",
-      "name": "IMG_20260709_091518_00_823",
+      "id": "0-",
+      "name": "",
       "levels": [
         {
           "tileSize": 256,
@@ -24,19 +24,19 @@ var APP_DATA = {
       ],
       "faceSize": 2000,
       "initialViewParameters": {
-        "yaw": 1.9428755861636482,
-        "pitch": 0.5412005653820273,
-        "fov": 1.9018406484000232
+        "yaw": 1.65215050133318,
+        "pitch": 0.72911161946619,
+        "fov": 1.38217411905719
       },
       "linkHotspots": [],
       "infoHotspots": []
     }
   ],
-  "name": "Well-03",
+  "name": "Project Title",
   "settings": {
     "mouseViewMode": "drag",
     "autorotateEnabled": true,
-    "fullscreenButton": true,
+    "fullscreenButton": false,
     "viewControlButtons": false
   }
 };
