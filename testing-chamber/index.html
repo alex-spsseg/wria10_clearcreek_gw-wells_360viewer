@@ -61,7 +61,7 @@
     .ctrl-btn:hover { background: #019fc4; color: #0e1b33; }
     .ctrl-btn.active { background: #019fc4; color: #0e1b33; border-color: #ffffff; }
 
-    /* Hotspot Markers & Popup Tooltips */
+    /* Hotspot Markers & Tooltips */
     .hotspot-pin {
       width: 26px; height: 26px; background: #019fc4; border: 2px solid #ffffff;
       border-radius: 50%; cursor: pointer; transform: translate(-50%, -50%);
@@ -103,8 +103,6 @@
   <script>
     const urlParams = new URLSearchParams(window.location.search);
     let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'default';
-    
-    // Auto-sanitize site ID (converts spaces and hyphens to underscores)
     const siteId = rawSiteId.trim().toLowerCase().replace(/[\s-]+/g, '_');
 
     var container = document.getElementById('container');
@@ -149,9 +147,9 @@
             { tileSize: 256, maxResolution: 256, maxLevel: 1 },
             { tileSize: 512, maxResolution: 2048, maxLevel: 4 }
           ]);
-          sourceL = Marzipano.ImageUrlSource.fromString('tiles/' + siteId + '/img1/0-old/{z}/{f}/{y}/{x}.jpg');
+          sourceL = Marzipano.ImageUrlSource.fromString('tiles/' + siteId + '/img1/scene/{z}/{f}/{y}/{x}.jpg');
           if (!isSingleMode) {
-            sourceR = Marzipano.ImageUrlSource.fromString('tiles/' + siteId + '/img2/1-new/{z}/{f}/{y}/{x}.jpg');
+            sourceR = Marzipano.ImageUrlSource.fromString('tiles/' + siteId + '/img2/scene/{z}/{f}/{y}/{x}.jpg');
           }
         } else {
           geometry = new Marzipano.EquirectGeometry([{ width: 4000 }]);
