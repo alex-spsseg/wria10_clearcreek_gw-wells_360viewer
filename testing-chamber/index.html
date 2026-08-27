@@ -107,7 +107,7 @@
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'test_2';
+    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'test_3';
     const siteId = rawSiteId.trim().toLowerCase().replace(/[\s-]+/g, '_');
 
     function showBanner(msg) {
@@ -196,33 +196,33 @@
         viewL = new Marzipano.RectilinearView(defaultViewL, limiter);
         viewR = isSingleMode ? null : new Marzipano.RectilinearView(defaultViewR, limiter);
 
-        var geometry, sourceL, sourceR;
+        var geometryL, geometryR, sourceL, sourceR;
+        var defaultLevels = [{ tileSize: 512, size: 512 }, { tileSize: 512, size: 1024 }, { tileSize: 512, size: 2048 }];
 
         if (isTiled) {
-          geometry = new Marzipano.CubeGeometry([
-            { tileSize: 256, size: 256 },
-            { tileSize: 512, size: 512 },
-            { tileSize: 512, size: 1024 },
-            { tileSize: 512, size: 2048 }
-          ]);
+          geometryL = new Marzipano.CubeGeometry(
+              (config.levels_1 && config.levels_1.length) ? config.levels_1 : defaultLevels);
           sourceL = Marzipano.ImageUrlSource.fromString('tiles/' + siteId + '/img1/scene/{z}/{f}/{y}/{x}.jpg');
           if (!isSingleMode) {
+            geometryR = new Marzipano.CubeGeometry(
+                (config.levels_2 && config.levels_2.length) ? config.levels_2 : defaultLevels);
             sourceR = Marzipano.ImageUrlSource.fromString('tiles/' + siteId + '/img2/scene/{z}/{f}/{y}/{x}.jpg');
           }
         } else {
-          geometry = new Marzipano.EquirectGeometry([{ width: 4000 }]);
+          geometryL = new Marzipano.EquirectGeometry([{ width: 4000 }]);
+          geometryR = geometryL;
           sourceL = Marzipano.ImageUrlSource.fromString('tiles/' + siteId + '/img1.jpg');
           if (!isSingleMode) {
             sourceR = Marzipano.ImageUrlSource.fromString('tiles/' + siteId + '/img2.jpg');
           }
         }
 
-        var sceneL = viewerL.createScene({ source: sourceL, geometry: geometry, view: viewL });
+        var sceneL = viewerL.createScene({ source: sourceL, geometry: geometryL, view: viewL });
         sceneL.switchTo();
         renderHotspots(sceneL, config.hotspots_1);
 
         if (!isSingleMode) {
-          var sceneR = viewerR.createScene({ source: sourceR, geometry: geometry, view: viewR });
+          var sceneR = viewerR.createScene({ source: sourceR, geometry: geometryR, view: viewR });
           sceneR.switchTo();
           renderHotspots(sceneR, config.hotspots_2);
 
