@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Universal 360° Asset Viewer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background: #0e1b33; font-family: sans-serif; }
+    
+    #container { display: flex; width: 100vw; height: 100vh; position: relative; }
+
+    /* Side-by-Side Mode Default */
+    .pano-panel { flex: 1; height: 100%; position: relative; border-right: 2px solid #1b3f95; }
+    .pano-panel:last-child { border-right: none; }
+    .pano-panel.hidden { display: none; }
+
+    /* Curtain / Wipe Mode Styles */
+    #container.curtain-mode .pano-panel {
+      position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+    }
+    #container.curtain-mode #pano-right-wrapper {
+      position: absolute; top: 0; left: 0; width: 50vw; height: 100vh;
+      overflow: hidden; z-index: 5; border-right: 3px solid #019fc4;
+    }
+    #container.curtain-mode #pano-right {
+      width: 100vw; height: 100vh;
+    }
+
+    #curtain-slider {
+      display: none;
+      position: absolute; top: 0; bottom: 0; left: 50vw; z-index: 30;
+      width: 4px; background: #019fc4; cursor: ew-resize;
+      box-shadow: 0 0 10px rgba(0,0,0,0.8);
+    }
+    #curtain-slider-handle {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 36px; height: 36px; background: #019fc4; border: 2px solid #ffffff;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      color: #ffffff; font-weight: bold; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      user-select: none; pointer-events: none;
+    }
+
+    .pano-label {
+      position: absolute; top: 12px; left: 12px; z-index: 10;
+      background: rgba(14, 27, 51, 0.85); color: #ffffff;
+      padding: 6px 12px; font-size: 13px; border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.15); pointer-events: none;
+    }
+
+    #control-bar {
+      position: absolute; top: 12px; right: 12px; z-index: 20;
+      display: flex; gap: 8px;
+    }
+
+    .ctrl-btn {
+      background: #1b3f95; color: #ffffff; border: 1px solid #019fc4;
+      padding: 8px 12px; font-size: 12px; font-weight: bold;
+      border-radius: 4px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      transition: all 0.2s ease;
+    }
+    .ctrl-btn:hover { background: #019fc4; color: #0e1b33; }
+    .ctrl-btn.active { background: #019fc4; color: #0e1b33; border-color: #ffffff; }
+
+    /* Hotspot Markers & Popup Tooltips */
+    .hotspot-pin {
+      width: 26px; height: 26px; background: #019fc4; border: 2px solid #ffffff;
+      border-radius: 50%; cursor: pointer; transform: translate(-50%, -50%);
+      box-shadow: 0 0 10px rgba(0,0,0,0.5); position: relative;
+    }
+    .hotspot-pin::after {
+      content: 'i'; color: #ffffff; font-weight: bold; font-family: sans-serif;
+      display: flex; align-items: center; justify-content: center; height: 100%; font-size: 14px;
+    }
+    .hotspot-tooltip {
+      position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+      background: rgba(14, 27, 51, 0.95); color: #ffffff; padding: 8px 12px;
+      border-radius: 4px; font-size: 12px; min-width: 140px; text-align: center;
+      border: 1px solid #019fc4; display: none; pointer-events: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5); white-space: nowrap;
+    }
+    .hotspot-pin:hover .hotspot-tooltip { display: block; }
+  </style>
+  <script src="vendor/marzipano.js"></script>
+</head>
+<body>
+
+  <div id="container">
+    <div id="control-bar">
+      <button id="autorotate-btn" class="ctrl-btn">Auto-Rotate</button>
+      <button id="fullscreen-btn" class="ctrl-btn">Full Screen</button>
+      <button id="reset-btn" class="ctrl-btn">Reset View</button>
+    </div>
+
+    <div id="pano-left" class="pano-panel"><div class="pano-label" id="label-left">360° View</div></div>
+    
+    <div id="pano-right-wrapper">
+      <div id="pano-right" class="pano-panel"><div class="pano-label" id="label-right">Comparison View</div></div>
+    </div>
+
+    <div id="curtain-slider"><div id="curtain-slider-handle">↔</div></div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const siteId = urlParams.get('site') || urlParams.get('well') || 'default';
+    const isTiled = urlParams.get('tiled') === 'true';
+
+    var container = document.getElementById('container');
+    var panelR = document.getElementById('pano-right');
+    var wrapperR = document.getElementById('pano-right-wrapper');
+    var slider = document.getElementById('curtain-slider');
+
+    var viewerL = new Marzipano.Viewer(document.getElementById('pano-left'));
+    var viewerR = null;
+    var limiter = Marzipano.RectilinearView.limit.traditional(4000, 100 * Math.PI / 180);
+
+    fetch('tiles/' + siteId + '/config.json')
+      .then(res => res.ok ? res.json() : {})
+      .catch(() => ({}))
+      .then(config => {
+        const mode = config.mode || 'single';
+        const isSingleMode = mode === 'single';
+        const isCurtainMode = mode === 'curtain';
+
+        if (isSingleMode) {
+          wrapperR.classList.add('hidden');
+        } else if (isCurtainMode) {
+          container.classList.add('curtain-mode');
+          slider.style.display = 'block';
+          viewerR = new Marzipano.Viewer(panelR);
+          setupCurtainSlider();
+        } else {
+          viewerR = new Marzipano.Viewer(panelR);
+        }
+
+        var defaultViewL = { yaw: config.yaw_1 || 0, pitch: config.pitch_1 || 0, fov: Math.PI / 4 };
+        var defaultViewR = { yaw: config.yaw_2 || 0, pitch: config.pitch_2 || 0, fov: Math.PI / 4 };
+
+        var viewL = new Marzipano.RectilinearView(defaultViewL, limiter);
+        var viewR = isSingleMode ? null : new Marzipano.RectilinearView(defaultViewR, limiter);
+
+        var geometry, sourceL, sourceR;
+
+        if (isTiled) {
+          geometry = new Marzipano.CubeGeometry([
+            { tileSize: 256, maxResolution: 256, maxLevel: 1 },
+            { tileSize: 512, maxResolution: 2048, maxLevel: 4 }
+          ]);
+          sourceL = Marzipano.ImageUrlSource.fromString('tiles/' + siteId + '/img1/0-old/{z}/{f}/{y}/{x}.jpg');
+          if (!isSingleMode) {
+            sourceR = Marzipano.ImageUrlSource.fromString('tiles/' + siteId + '/img2/1-new/{z}/{f}/{y}/{x}.jpg');
+          }
+        } else {
+          geometry = new Marzipano.EquirectGeometry([{ width: 4000 }]);
+          sourceL = Marzipano.ImageUrlSource.fromString('tiles/' + siteId + '/img1.jpg');
+          if (!isSingleMode) {
+            sourceR = Marzipano.ImageUrlSource.fromString('tiles/' + siteId + '/img2.jpg');
+          }
+        }
+
+        var sceneL = viewerL.createScene({ source: sourceL, geometry: geometry, view: viewL });
+        sceneL.switchTo();
+        renderHotspots(sceneL, config.hotspots_1);
+
+        if (!isSingleMode) {
+          var sceneR = viewerR.createScene({ source: sourceR, geometry: geometry, view: viewR });
+          sceneR.switchTo();
+          renderHotspots(sceneR, config.hotspots_2);
+
+          var isSyncing = false;
+          function syncViews(src, tgt) {
+            if (isSyncing) return;
+            isSyncing = true;
+            tgt.setParameters(src.parameters());
+            isSyncing = false;
+          }
+          viewL.addEventListener('change', () => syncViews(viewL, viewR));
+          viewR.addEventListener('change', () => syncViews(viewR, viewL));
+        }
+
+        if (config.label_1) document.getElementById('label-left').innerText = config.label_1;
+        if (config.label_2 && !isSingleMode) document.getElementById('label-right').innerText = config.label_2;
+
+        var autorotate = Marzipano.autorotate({ yawSpeed: 0.03, targetPitch: 0, targetFov: Math.PI / 4 });
+        var isRotating = false;
+
+        function toggleAutorotate(enable) {
+          isRotating = (enable !== undefined) ? enable : !isRotating;
+          var btn = document.getElementById('autorotate-btn');
+          if (isRotating) {
+            viewerL.startAutorotate(autorotate);
+            if (viewerR) viewerR.startAutorotate(autorotate);
+            btn.classList.add('active');
+          } else {
+            viewerL.stopAutorotate();
+            if (viewerR) viewerR.stopAutorotate();
+            btn.classList.remove('active');
+          }
+        }
+
+        if (config.autorotate) toggleAutorotate(true);
+        document.getElementById('autorotate-btn').addEventListener('click', () => toggleAutorotate());
+
+        document.getElementById('fullscreen-btn').addEventListener('click', () => {
+          if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+          else if (document.exitFullscreen) document.exitFullscreen();
+        });
+
+        document.getElementById('reset-btn').addEventListener('click', () => {
+          toggleAutorotate(false);
+          viewL.setParameters(defaultViewL);
+          if (viewR) viewR.setParameters(defaultViewR);
+        });
+      });
+
+    function setupCurtainSlider() {
+      let isDragging = false;
+
+      function updateWipe(x) {
+        let pct = (x / window.innerWidth) * 100;
+        pct = Math.max(0, Math.min(100, pct));
+        wrapperR.style.width = pct + 'vw';
+        slider.style.left = pct + 'vw';
+      }
+
+      slider.addEventListener('mousedown', () => isDragging = true);
+      window.addEventListener('mouseup', () => isDragging = false);
+      window.addEventListener('mousemove', (e) => { if (isDragging) updateWipe(e.clientX); });
+
+      slider.addEventListener('touchstart', () => isDragging = true);
+      window.addEventListener('touchend', () => isDragging = false);
+      window.addEventListener('touchmove', (e) => { if (isDragging && e.touches[0]) updateWipe(e.touches[0].clientX); });
+    }
+
+    function renderHotspots(scene, hotspots) {
+      if (!hotspots || !Array.isArray(hotspots)) return;
+      hotspots.forEach(spot => {
+        var el = document.createElement('div');
+        el.className = 'hotspot-pin';
+
+        var tip = document.createElement('div');
+        tip.className = 'hotspot-tooltip';
+        tip.innerHTML = '<strong>' + (spot.title || '') + '</strong><br>' + (spot.text || '');
+        el.appendChild(tip);
+
+        scene.hotspotContainer().createHotspot(el, { yaw: spot.yaw, pitch: spot.pitch });
+      });
+    }
+  </script>
+
+</body>
+</html>
