@@ -7,7 +7,7 @@
   "pitch_2": 0.0,
   "label_1": "View 1",
   "label_2": "View 2",
-  "autorotate": true,
+  "autorotate": false,
   "hotspots_1": [],
   "hotspots_2": []
 }

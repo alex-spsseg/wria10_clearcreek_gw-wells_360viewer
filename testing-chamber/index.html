@@ -107,7 +107,7 @@
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'test';
+    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'test_1';
     const siteId = rawSiteId.trim().toLowerCase().replace(/[\s-]+/g, '_');
 
     function showBanner(msg) {
