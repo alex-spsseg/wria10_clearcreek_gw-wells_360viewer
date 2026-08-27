@@ -1,0 +1,15 @@
+{
+  "mode": "compare",
+  "format": "raw",
+  "yaw_1": 0.0,
+  "pitch_1": 0.0,
+  "yaw_2": 0.0,
+  "pitch_2": 0.0,
+  "label_1": "yo (2026/08/25)",
+  "label_2": "yooooooo (2026/08/25)",
+  "autorotate": false,
+  "hotspots_1": [],
+  "hotspots_2": [],
+  "levels_1": [],
+  "levels_2": []
+}

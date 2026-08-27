@@ -11,17 +11,19 @@
 
     .pano-panel { flex: 1; height: 100%; position: relative; border-right: 2px solid #1b3f95; }
     .pano-panel:last-child { border-right: none; }
-    .pano-panel.hidden { display: none; }
+
+    #pano-right-wrapper { flex: 1; height: 100%; position: relative; }
+    #pano-right-wrapper.hidden { display: none; }
 
     #container.curtain-mode .pano-panel {
       position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
     }
     #container.curtain-mode #pano-right-wrapper {
-      position: absolute; top: 0; left: 0; width: 50vw; height: 100vh;
-      overflow: hidden; z-index: 5; border-right: 3px solid #019fc4;
+      position: absolute; top: 0; right: 0; left: auto; width: 50vw; height: 100vh;
+      overflow: hidden; z-index: 5; border-left: 3px solid #019fc4;
     }
     #container.curtain-mode #pano-right {
-      width: 100vw; height: 100vh;
+      position: absolute; top: 0; right: 0; left: auto; width: 100vw; height: 100vh;
     }
 
     #curtain-slider {
@@ -44,6 +46,7 @@
       padding: 6px 12px; font-size: 13px; border-radius: 4px;
       border: 1px solid rgba(255, 255, 255, 0.15); pointer-events: none;
     }
+    #label-right { left: auto; right: 12px; top: 56px; }
 
     #status-banner {
       position: absolute; top: 0; left: 0; width: 100%; z-index: 2000;
@@ -93,8 +96,9 @@
     <div id="pano-left" class="pano-panel"><div class="pano-label" id="label-left">360° View</div></div>
 
     <div id="pano-right-wrapper">
-      <div id="pano-right" class="pano-panel"><div class="pano-label" id="label-right">Comparison View</div></div>
+      <div id="pano-right" class="pano-panel"></div>
     </div>
+    <div class="pano-label" id="label-right">Comparison View</div>
 
     <div id="curtain-slider"><div id="curtain-slider-handle">↔</div></div>
 
@@ -107,7 +111,7 @@
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'test_3';
+    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'test_yo';
     const siteId = rawSiteId.trim().toLowerCase().replace(/[\s-]+/g, '_');
 
     function showBanner(msg) {
@@ -135,12 +139,12 @@
       isRotating = (enable !== undefined) ? enable : !isRotating;
       var btn = document.getElementById('autorotate-btn');
       if (isRotating) {
-        viewerL.startAutorotate(autorotate);
-        if (viewerR) viewerR.startAutorotate(autorotate);
+        viewerL.startMovement(autorotate);
+        if (viewerR) viewerR.startMovement(autorotate);
         btn.classList.add('active');
       } else {
-        viewerL.stopAutorotate();
-        if (viewerR) viewerR.stopAutorotate();
+        viewerL.stopMovement();
+        if (viewerR) viewerR.stopMovement();
         btn.classList.remove('active');
       }
     }
@@ -181,6 +185,7 @@
 
         if (isSingleMode) {
           wrapperR.classList.add('hidden');
+          document.getElementById('label-right').style.display = 'none';
         } else if (isCurtainMode) {
           container.classList.add('curtain-mode');
           slider.style.display = 'block';
@@ -197,7 +202,7 @@
         viewR = isSingleMode ? null : new Marzipano.RectilinearView(defaultViewR, limiter);
 
         var geometryL, geometryR, sourceL, sourceR;
-        var defaultLevels = [{ tileSize: 512, size: 512 }, { tileSize: 512, size: 1024 }, { tileSize: 512, size: 2048 }];
+        var defaultLevels = [{ tileSize: 256, size: 256, fallbackOnly: true }, { tileSize: 512, size: 512 }, { tileSize: 512, size: 1024 }, { tileSize: 512, size: 2048 }];
 
         if (isTiled) {
           geometryL = new Marzipano.CubeGeometry(
@@ -237,12 +242,14 @@
           viewR.addEventListener('change', () => syncViews(viewR, viewL));
         }
 
-        if (isCurtainMode) {
-          setTimeout(() => {
-            viewerL.updateSize();
-            if (viewerR) viewerR.updateSize();
-          }, 100);
-        }
+        setTimeout(() => {
+          viewerL.updateSize();
+          if (viewerR) viewerR.updateSize();
+        }, 100);
+        window.addEventListener('resize', () => {
+          viewerL.updateSize();
+          if (viewerR) viewerR.updateSize();
+        });
 
         if (config.label_1) document.getElementById('label-left').innerText = config.label_1;
         if (config.label_2 && !isSingleMode) document.getElementById('label-right').innerText = config.label_2;
@@ -259,7 +266,7 @@
       function updateWipe(x) {
         let pct = (x / window.innerWidth) * 100;
         pct = Math.max(0, Math.min(100, pct));
-        wrapperR.style.width = pct + 'vw';
+        wrapperR.style.width = (100 - pct) + 'vw';
         slider.style.left = pct + 'vw';
       }
 
