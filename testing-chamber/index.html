@@ -48,7 +48,7 @@
     #status-banner {
       position: absolute; top: 0; left: 0; width: 100%; z-index: 2000;
       background: rgba(180, 40, 40, 0.92); color: #ffffff; text-align: center;
-      padding: 10px; font-size: 14px; display: none;
+      padding: 10px; font-size: 14px; display: none; pointer-events: none;
     }
 
     #control-bar {
@@ -107,7 +107,7 @@
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'test_1';
+    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'test_2';
     const siteId = rawSiteId.trim().toLowerCase().replace(/[\s-]+/g, '_');
 
     function showBanner(msg) {
