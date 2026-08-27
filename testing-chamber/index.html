@@ -102,7 +102,7 @@
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'curtain_test';
+    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'test_again';
     
     // Auto-sanitize site ID (converts spaces and hyphens to underscores)
     const siteId = rawSiteId.trim().toLowerCase().replace(/[\s-]+/g, '_');
@@ -146,8 +146,10 @@
 
         if (isTiled) {
           geometry = new Marzipano.CubeGeometry([
-            { tileSize: 256, maxResolution: 256, maxLevel: 1 },
-            { tileSize: 512, maxResolution: 2048, maxLevel: 4 }
+            { tileSize: 256, size: 256 },
+            { tileSize: 512, size: 512 },
+            { tileSize: 512, size: 1024 },
+            { tileSize: 512, size: 2048 }
           ]);
           sourceL = Marzipano.ImageUrlSource.fromString('tiles/' + siteId + '/img1/scene/{z}/{f}/{y}/{x}.jpg');
           if (!isSingleMode) {
