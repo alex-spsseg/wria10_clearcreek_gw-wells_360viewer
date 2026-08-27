@@ -6,15 +6,13 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body, html { width: 100%; height: 100%; overflow: hidden; background: #0e1b33; font-family: sans-serif; }
-    
+
     #container { display: flex; width: 100vw; height: 100vh; position: relative; }
 
-    /* Side-by-Side Mode Default */
     .pano-panel { flex: 1; height: 100%; position: relative; border-right: 2px solid #1b3f95; }
     .pano-panel:last-child { border-right: none; }
     .pano-panel.hidden { display: none; }
 
-    /* Curtain / Wipe Mode Styles */
     #container.curtain-mode .pano-panel {
       position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
     }
@@ -47,21 +45,26 @@
       border: 1px solid rgba(255, 255, 255, 0.15); pointer-events: none;
     }
 
+    #status-banner {
+      position: absolute; top: 0; left: 0; width: 100%; z-index: 2000;
+      background: rgba(180, 40, 40, 0.92); color: #ffffff; text-align: center;
+      padding: 10px; font-size: 14px; display: none;
+    }
+
     #control-bar {
-      position: absolute; top: 12px; right: 12px; z-index: 20;
-      display: flex; gap: 8px;
+      position: absolute; top: 12px; right: 12px; z-index: 1000;
+      display: flex; gap: 8px; pointer-events: auto;
     }
 
     .ctrl-btn {
       background: #1b3f95; color: #ffffff; border: 1px solid #019fc4;
       padding: 8px 12px; font-size: 12px; font-weight: bold;
       border-radius: 4px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-      transition: all 0.2s ease;
+      transition: all 0.2s ease; user-select: none; position: relative; z-index: 1001;
     }
     .ctrl-btn:hover { background: #019fc4; color: #0e1b33; }
-    .ctrl-btn.active { background: #019fc4; color: #0e1b33; border-color: #ffffff; }
+    .ctrl-btn:active, .ctrl-btn.active { background: #019fc4; color: #0e1b33; border-color: #ffffff; }
 
-    /* Hotspot Markers & Tooltips */
     .hotspot-pin {
       width: 26px; height: 26px; background: #019fc4; border: 2px solid #ffffff;
       border-radius: 50%; cursor: pointer; transform: translate(-50%, -50%);
@@ -84,28 +87,34 @@
 </head>
 <body>
 
-  <div id="container">
-    <div id="control-bar">
-      <button id="autorotate-btn" class="ctrl-btn">Auto-Rotate</button>
-      <button id="fullscreen-btn" class="ctrl-btn">Full Screen</button>
-      <button id="reset-btn" class="ctrl-btn">Reset View</button>
-    </div>
+  <div id="status-banner"></div>
 
+  <div id="container">
     <div id="pano-left" class="pano-panel"><div class="pano-label" id="label-left">360° View</div></div>
-    
+
     <div id="pano-right-wrapper">
       <div id="pano-right" class="pano-panel"><div class="pano-label" id="label-right">Comparison View</div></div>
     </div>
 
     <div id="curtain-slider"><div id="curtain-slider-handle">↔</div></div>
+
+    <div id="control-bar">
+      <button id="autorotate-btn" class="ctrl-btn" type="button">Auto-Rotate</button>
+      <button id="fullscreen-btn" class="ctrl-btn" type="button">Full Screen</button>
+      <button id="reset-btn" class="ctrl-btn" type="button">Reset View</button>
+    </div>
   </div>
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'test_again';
-    
-    // Auto-sanitize site ID (converts spaces and hyphens to underscores)
+    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'test';
     const siteId = rawSiteId.trim().toLowerCase().replace(/[\s-]+/g, '_');
+
+    function showBanner(msg) {
+      var b = document.getElementById('status-banner');
+      b.textContent = msg;
+      b.style.display = 'block';
+    }
 
     var container = document.getElementById('container');
     var panelR = document.getElementById('pano-right');
@@ -114,16 +123,61 @@
 
     var viewerL = new Marzipano.Viewer(document.getElementById('pano-left'));
     var viewerR = null;
+    var viewL = null, viewR = null;
+    var defaultViewL = { yaw: 0, pitch: 0, fov: Math.PI / 4 };
+    var defaultViewR = { yaw: 0, pitch: 0, fov: Math.PI / 4 };
     var limiter = Marzipano.RectilinearView.limit.traditional(4000, 100 * Math.PI / 180);
 
+    var autorotate = Marzipano.autorotate({ yawSpeed: 0.03, targetPitch: 0, targetFov: Math.PI / 4 });
+    var isRotating = false;
+
+    function toggleAutorotate(enable) {
+      isRotating = (enable !== undefined) ? enable : !isRotating;
+      var btn = document.getElementById('autorotate-btn');
+      if (isRotating) {
+        viewerL.startAutorotate(autorotate);
+        if (viewerR) viewerR.startAutorotate(autorotate);
+        btn.classList.add('active');
+      } else {
+        viewerL.stopAutorotate();
+        if (viewerR) viewerR.stopAutorotate();
+        btn.classList.remove('active');
+      }
+    }
+
+    function toggleFullscreen() {
+      var doc = window.document;
+      var docEl = doc.documentElement;
+      var requestFS = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+      var cancelFS = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+
+      if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+        if (requestFS) requestFS.call(docEl);
+      } else {
+        if (cancelFS) cancelFS.call(doc);
+      }
+    }
+
+    function resetViews() {
+      toggleAutorotate(false);
+      if (viewL) viewL.setParameters(defaultViewL);
+      if (viewR) viewR.setParameters(defaultViewR);
+    }
+
+    document.getElementById('autorotate-btn').addEventListener('click', () => toggleAutorotate());
+    document.getElementById('fullscreen-btn').addEventListener('click', () => toggleFullscreen());
+    document.getElementById('reset-btn').addEventListener('click', () => resetViews());
+
     fetch('tiles/' + siteId + '/config.json')
-      .then(res => res.ok ? res.json() : {})
-      .catch(() => ({}))
+      .then(res => {
+        if (res.ok) return res.json();
+        throw new Error('missing-config');
+      })
       .then(config => {
         const mode = config.mode || 'single';
         const isSingleMode = mode === 'single';
         const isCurtainMode = mode === 'curtain';
-        const isTiled = config.format === 'tiled' || urlParams.get('tiled') === 'true';
+        const isTiled = config.format === 'tiled';
 
         if (isSingleMode) {
           wrapperR.classList.add('hidden');
@@ -136,11 +190,11 @@
           viewerR = new Marzipano.Viewer(panelR);
         }
 
-        var defaultViewL = { yaw: config.yaw_1 || 0, pitch: config.pitch_1 || 0, fov: Math.PI / 4 };
-        var defaultViewR = { yaw: config.yaw_2 || 0, pitch: config.pitch_2 || 0, fov: Math.PI / 4 };
+        defaultViewL = { yaw: config.yaw_1 || 0, pitch: config.pitch_1 || 0, fov: Math.PI / 4 };
+        defaultViewR = { yaw: config.yaw_2 || 0, pitch: config.pitch_2 || 0, fov: Math.PI / 4 };
 
-        var viewL = new Marzipano.RectilinearView(defaultViewL, limiter);
-        var viewR = isSingleMode ? null : new Marzipano.RectilinearView(defaultViewR, limiter);
+        viewL = new Marzipano.RectilinearView(defaultViewL, limiter);
+        viewR = isSingleMode ? null : new Marzipano.RectilinearView(defaultViewR, limiter);
 
         var geometry, sourceL, sourceR;
 
@@ -193,36 +247,10 @@
         if (config.label_1) document.getElementById('label-left').innerText = config.label_1;
         if (config.label_2 && !isSingleMode) document.getElementById('label-right').innerText = config.label_2;
 
-        var autorotate = Marzipano.autorotate({ yawSpeed: 0.03, targetPitch: 0, targetFov: Math.PI / 4 });
-        var isRotating = false;
-
-        function toggleAutorotate(enable) {
-          isRotating = (enable !== undefined) ? enable : !isRotating;
-          var btn = document.getElementById('autorotate-btn');
-          if (isRotating) {
-            viewerL.startAutorotate(autorotate);
-            if (viewerR) viewerR.startAutorotate(autorotate);
-            btn.classList.add('active');
-          } else {
-            viewerL.stopAutorotate();
-            if (viewerR) viewerR.stopAutorotate();
-            btn.classList.remove('active');
-          }
-        }
-
         if (config.autorotate) toggleAutorotate(true);
-        document.getElementById('autorotate-btn').addEventListener('click', () => toggleAutorotate());
-
-        document.getElementById('fullscreen-btn').addEventListener('click', () => {
-          if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-          else if (document.exitFullscreen) document.exitFullscreen();
-        });
-
-        document.getElementById('reset-btn').addEventListener('click', () => {
-          toggleAutorotate(false);
-          viewL.setParameters(defaultViewL);
-          if (viewR) viewR.setParameters(defaultViewR);
-        });
+      })
+      .catch(() => {
+        showBanner('No published site found for "' + siteId + '". Check the ?site= parameter or republish this site.');
       });
 
     function setupCurtainSlider() {
