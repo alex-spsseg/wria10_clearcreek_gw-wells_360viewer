@@ -102,8 +102,10 @@
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    const siteId = urlParams.get('site') || urlParams.get('well') || 'default';
-    const isTiled = urlParams.get('tiled') === 'true';
+    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'default';
+    
+    // Auto-sanitize site ID (converts spaces and hyphens to underscores)
+    const siteId = rawSiteId.trim().toLowerCase().replace(/[\s-]+/g, '_');
 
     var container = document.getElementById('container');
     var panelR = document.getElementById('pano-right');
@@ -121,6 +123,7 @@
         const mode = config.mode || 'single';
         const isSingleMode = mode === 'single';
         const isCurtainMode = mode === 'curtain';
+        const isTiled = config.format === 'tiled' || urlParams.get('tiled') === 'true';
 
         if (isSingleMode) {
           wrapperR.classList.add('hidden');
@@ -176,6 +179,13 @@
           }
           viewL.addEventListener('change', () => syncViews(viewL, viewR));
           viewR.addEventListener('change', () => syncViews(viewR, viewL));
+        }
+
+        if (isCurtainMode) {
+          setTimeout(() => {
+            viewerL.updateSize();
+            if (viewerR) viewerR.updateSize();
+          }, 100);
         }
 
         if (config.label_1) document.getElementById('label-left').innerText = config.label_1;
