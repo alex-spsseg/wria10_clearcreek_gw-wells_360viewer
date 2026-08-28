@@ -1,13 +1,13 @@
 {
   "mode": "single",
   "format": "raw",
-  "yaw_1": 0.1583013631558857,
-  "pitch_1": 0.30246555937061725,
+  "yaw_1": 0.0,
+  "pitch_1": 0.0,
   "yaw_2": 0.0,
   "pitch_2": 0.0,
   "label_1": "Photo 1 (2026/07/09)",
   "label_2": "",
-  "autorotate": true,
+  "autorotate": false,
   "hotspots_1": [
     {
       "yaw": 0.34341929800962134,
