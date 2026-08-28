@@ -95,6 +95,8 @@
       border-radius: 50%; cursor: pointer; transform: translate(-50%, -50%);
       box-shadow: 0 0 10px rgba(0,0,0,0.5); position: relative;
     }
+    .hotspot-pin.hotspot-cat-issue { background: #e05555; }
+    .hotspot-pin.hotspot-cat-measurement { background: #4caf6d; }
     .hotspot-pin::after {
       content: 'i'; color: #ffffff; font-weight: bold; font-family: sans-serif;
       display: flex; align-items: center; justify-content: center; height: 100%; font-size: 14px;
@@ -102,11 +104,32 @@
     .hotspot-tooltip {
       position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
       background: rgba(14, 27, 51, 0.95); color: #ffffff; padding: 8px 12px;
-      border-radius: 4px; font-size: 12px; min-width: 140px; text-align: center;
-      border: 1px solid #019fc4; display: none; pointer-events: none;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5); white-space: nowrap;
+      border-radius: 4px; font-size: 12px; min-width: 140px; max-width: 220px;
+      text-align: center; border: 1px solid #019fc4; display: none; pointer-events: auto;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5); white-space: normal;
     }
+    .hotspot-tooltip a { color: #6fd3ea; word-break: break-all; }
     .hotspot-pin:hover .hotspot-tooltip { display: block; }
+
+    .hotspot-form {
+      position: fixed; z-index: 2000; width: 240px;
+      background: #0e1b33; border: 1px solid #019fc4; border-radius: 6px;
+      padding: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+      font-family: sans-serif; font-size: 12px; color: #ffffff;
+    }
+    .hotspot-form label { display: block; margin: 8px 0 3px; color: #7fa8b8; }
+    .hotspot-form label:first-child { margin-top: 0; }
+    .hotspot-form input[type="text"], .hotspot-form textarea, .hotspot-form select {
+      width: 100%; box-sizing: border-box; background: #0a1428; color: #ffffff;
+      border: 1px solid #22346b; border-radius: 4px; padding: 5px 6px; font-size: 12px;
+      font-family: inherit; resize: vertical;
+    }
+    .hotspot-form-buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+    .hotspot-form-buttons button {
+      background: #1b3f95; color: #ffffff; border: 1px solid #019fc4;
+      padding: 5px 10px; font-size: 12px; border-radius: 4px; cursor: pointer;
+    }
+    .hotspot-form-buttons button.hf-save { background: #019fc4; }
   </style>
   <script src="vendor/marzipano.js"></script>
 </head>
@@ -132,6 +155,8 @@
       <button id="unlock-aim-btn" class="ctrl-btn" type="button" style="display:none;">Unlock Independent Aim</button>
       <button id="use-view-left-btn" class="ctrl-btn" type="button" style="display:none;">Use Left View</button>
       <button id="use-view-right-btn" class="ctrl-btn" type="button" style="display:none;">Use Right View</button>
+      <button id="edit-hotspots-btn" class="ctrl-btn" type="button" style="display:none;">Edit Hotspots</button>
+      <button id="save-hotspots-btn" class="ctrl-btn" type="button" style="display:none;">Save Hotspots</button>
       <button id="autorotate-btn" class="ctrl-btn" type="button">Auto-Rotate</button>
       <button id="fullscreen-btn" class="ctrl-btn" type="button">Full Screen</button>
       <button id="reset-btn" class="ctrl-btn" type="button">Reset View</button>
@@ -140,7 +165,7 @@
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'time_series_test';
+    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'hotspot_test';
     const siteId = rawSiteId.trim().toLowerCase().replace(/[\s-]+/g, '_');
 
     const isLocalPreview = (location.hostname === '127.0.0.1' || location.hostname === 'localhost');
@@ -273,6 +298,7 @@
             }
             var scene = viewerL.createScene({ source: source, geometry: geometry, view: view });
             renderHotspots(scene, p.hotspots);
+            pendingSlotHotspots[String(idx)] = (p.hotspots || []).slice();
             tsScenes.push(scene);
             tsViews.push(view);
 
@@ -296,6 +322,12 @@
             if (!tsViews.length) return;
             var v = tsViews[tsActiveIdx].parameters();
             sendViewCapture(v.yaw, v.pitch, tsActiveIdx);
+          });
+
+          document.getElementById('pano-left').addEventListener('click', (e) => {
+            if (!editingHotspots || !tsScenes.length) return;
+            placeHotspotAt(document.getElementById('pano-left'), tsViews[tsActiveIdx],
+                tsScenes[tsActiveIdx], String(tsActiveIdx), e.clientX, e.clientY);
           });
 
           setTimeout(() => { viewerL.updateSize(); }, 100);
@@ -351,11 +383,13 @@
 
         var sceneL = viewerL.createScene({ source: sourceL, geometry: geometryL, view: viewL });
         renderHotspots(sceneL, config.hotspots_1);
+        pendingSlotHotspots['1'] = (config.hotspots_1 || []).slice();
 
         var sceneB = null;
         if (isToggleMode) {
           sceneB = viewerL.createScene({ source: sourceR, geometry: geometryR, view: viewR });
           renderHotspots(sceneB, config.hotspots_2);
+          pendingSlotHotspots['2'] = (config.hotspots_2 || []).slice();
         }
 
         sceneL.switchTo();
@@ -366,6 +400,7 @@
           var sceneR = viewerR.createScene({ source: sourceR, geometry: geometryR, view: viewR });
           sceneR.switchTo();
           renderHotspots(sceneR, config.hotspots_2);
+          pendingSlotHotspots['2'] = (config.hotspots_2 || []).slice();
 
           var isSyncing = false;
           function syncViews(src, tgt) {
@@ -400,11 +435,22 @@
             var v = (showingA ? viewL : viewR).parameters();
             sendViewCapture(v.yaw, v.pitch, showingA ? 0 : 1);
           });
+          document.getElementById('pano-left').addEventListener('click', (e) => {
+            if (!editingHotspots) return;
+            var curView = showingA ? viewL : viewR;
+            var curScene = showingA ? sceneL : sceneB;
+            placeHotspotAt(document.getElementById('pano-left'), curView, curScene,
+                showingA ? '1' : '2', e.clientX, e.clientY);
+          });
         } else if (isSingleMode) {
           if (isLocalPreview) useViewBtn.style.display = 'inline-block';
           useViewBtn.addEventListener('click', () => {
             var v = viewL.parameters();
             sendViewCapture(v.yaw, v.pitch, 0);
+          });
+          document.getElementById('pano-left').addEventListener('click', (e) => {
+            if (!editingHotspots) return;
+            placeHotspotAt(document.getElementById('pano-left'), viewL, sceneL, '1', e.clientX, e.clientY);
           });
         } else {
           var unlockBtn = document.getElementById('unlock-aim-btn');
@@ -427,6 +473,14 @@
           useRightBtn.addEventListener('click', () => {
             var v = viewR.parameters();
             sendViewCapture(v.yaw, v.pitch, 1);
+          });
+          document.getElementById('pano-left').addEventListener('click', (e) => {
+            if (!editingHotspots) return;
+            placeHotspotAt(document.getElementById('pano-left'), viewL, sceneL, '1', e.clientX, e.clientY);
+          });
+          document.getElementById('pano-right').addEventListener('click', (e) => {
+            if (!editingHotspots) return;
+            placeHotspotAt(document.getElementById('pano-right'), viewR, sceneR, '2', e.clientX, e.clientY);
           });
         }
 
@@ -471,17 +525,112 @@
       window.addEventListener('touchmove', (e) => { if (isDragging && e.touches[0]) updateWipe(e.touches[0].clientX); });
     }
 
+    function escapeHtml(s) {
+      var d = document.createElement('div');
+      d.textContent = s == null ? '' : s;
+      return d.innerHTML;
+    }
+
+    function makeHotspotElement(spot) {
+      var el = document.createElement('div');
+      el.className = 'hotspot-pin hotspot-cat-' + (spot.category || 'note');
+
+      var tip = document.createElement('div');
+      tip.className = 'hotspot-tooltip';
+      var html = '<strong>' + escapeHtml(spot.title) + '</strong>';
+      if (spot.text) html += '<br>' + escapeHtml(spot.text);
+      if (spot.link) html += '<br><a href="' + escapeHtml(spot.link) + '" target="_blank" rel="noopener">' + escapeHtml(spot.link) + '</a>';
+      tip.innerHTML = html;
+      el.appendChild(tip);
+      return el;
+    }
+
     function renderHotspots(scene, hotspots) {
       if (!hotspots || !Array.isArray(hotspots)) return;
       hotspots.forEach(spot => {
-        var el = document.createElement('div');
-        el.className = 'hotspot-pin';
+        var el = makeHotspotElement(spot);
+        scene.hotspotContainer().createHotspot(el, { yaw: spot.yaw, pitch: spot.pitch });
+      });
+    }
 
-        var tip = document.createElement('div');
-        tip.className = 'hotspot-tooltip';
-        tip.innerHTML = '<strong>' + (spot.title || '') + '</strong><br>' + (spot.text || '');
-        el.appendChild(tip);
+    // -- hotspot placement (Preview Locally only) --------------------------
 
+    var editingHotspots = false;
+    var pendingSlotHotspots = {};
+    var editHotspotsBtn = document.getElementById('edit-hotspots-btn');
+    var saveHotspotsBtn = document.getElementById('save-hotspots-btn');
+
+    if (isLocalPreview) {
+      editHotspotsBtn.style.display = 'inline-block';
+      saveHotspotsBtn.style.display = 'inline-block';
+    }
+
+    editHotspotsBtn.addEventListener('click', () => {
+      editingHotspots = !editingHotspots;
+      editHotspotsBtn.textContent = editingHotspots ? 'Stop Placing' : 'Edit Hotspots';
+      editHotspotsBtn.classList.toggle('active', editingHotspots);
+      document.body.style.cursor = editingHotspots ? 'crosshair' : '';
+    });
+
+    saveHotspotsBtn.addEventListener('click', () => {
+      var original = saveHotspotsBtn.textContent;
+      fetch('/__save_hotspots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ site_id: siteId, slots: pendingSlotHotspots }),
+      }).then(res => {
+        saveHotspotsBtn.textContent = res.ok ? 'Saved!' : 'Failed, try again';
+        setTimeout(() => { saveHotspotsBtn.textContent = original; }, 1400);
+      }).catch(() => {
+        saveHotspotsBtn.textContent = 'Preview server not reachable';
+        setTimeout(() => { saveHotspotsBtn.textContent = original; }, 1800);
+      });
+    });
+
+    function showHotspotForm(x, y, onSave) {
+      var form = document.createElement('div');
+      form.className = 'hotspot-form';
+      form.style.left = Math.max(8, Math.min(x, window.innerWidth - 256)) + 'px';
+      form.style.top = Math.max(8, Math.min(y, window.innerHeight - 230)) + 'px';
+      form.innerHTML =
+        '<label>Title</label><input type="text" class="hf-title">' +
+        '<label>Text</label><textarea class="hf-text" rows="2"></textarea>' +
+        '<label>Link (optional)</label><input type="text" class="hf-link">' +
+        '<label>Category</label>' +
+        '<select class="hf-cat">' +
+        '<option value="note">Note</option>' +
+        '<option value="issue">Issue</option>' +
+        '<option value="measurement">Measurement</option>' +
+        '</select>' +
+        '<div class="hotspot-form-buttons">' +
+        '<button type="button" class="hf-cancel">Cancel</button>' +
+        '<button type="button" class="hf-save">Save Pin</button>' +
+        '</div>';
+      document.body.appendChild(form);
+
+      function close() { form.remove(); }
+      form.querySelector('.hf-cancel').addEventListener('click', close);
+      form.querySelector('.hf-save').addEventListener('click', () => {
+        var spot = {
+          title: form.querySelector('.hf-title').value.trim(),
+          text: form.querySelector('.hf-text').value.trim(),
+          link: form.querySelector('.hf-link').value.trim(),
+          category: form.querySelector('.hf-cat').value,
+        };
+        close();
+        onSave(spot);
+      });
+      form.querySelector('.hf-title').focus();
+    }
+
+    function placeHotspotAt(panelEl, view, scene, slotId, clientX, clientY) {
+      var rect = panelEl.getBoundingClientRect();
+      var coords = view.screenToCoordinates({ x: clientX - rect.left, y: clientY - rect.top });
+      showHotspotForm(clientX, clientY, (spotInfo) => {
+        var spot = Object.assign({ yaw: coords.yaw, pitch: coords.pitch }, spotInfo);
+        if (!pendingSlotHotspots[slotId]) pendingSlotHotspots[slotId] = [];
+        pendingSlotHotspots[slotId].push(spot);
+        var el = makeHotspotElement(spot);
         scene.hotspotContainer().createHotspot(el, { yaw: spot.yaw, pitch: spot.pitch });
       });
     }

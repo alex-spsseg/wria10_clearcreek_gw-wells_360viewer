@@ -1,0 +1,32 @@
+{
+  "mode": "single",
+  "format": "raw",
+  "yaw_1": 0.0,
+  "pitch_1": 0.0,
+  "yaw_2": 0.0,
+  "pitch_2": 0.0,
+  "label_1": "hotspt_test (2026/07/09)",
+  "label_2": "",
+  "autorotate": false,
+  "hotspots_1": [
+    {
+      "yaw": 0.32365953392464775,
+      "pitch": 0.22929106954709155,
+      "title": "Surveyor",
+      "text": "her name is jessica",
+      "link": "",
+      "category": "measurement"
+    },
+    {
+      "yaw": 1.7805869784308106,
+      "pitch": 0.9670353487566867,
+      "title": "Well-03",
+      "text": "This is a well",
+      "link": "",
+      "category": "issue"
+    }
+  ],
+  "hotspots_2": [],
+  "levels_1": [],
+  "levels_2": []
+}
