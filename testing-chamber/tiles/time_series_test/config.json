@@ -1,0 +1,63 @@
+{
+  "mode": "timeseries",
+  "format": "raw",
+  "autorotate": true,
+  "photos": [
+    {
+      "label": "The \"Before\" Picture (2026/07/09)",
+      "yaw": 0.7436847942747838,
+      "pitch": 0.2644173816771409,
+      "levels": [],
+      "hotspots": []
+    },
+    {
+      "label": "The \"After\" Picture (2026/07/09)",
+      "yaw": 1.3878858211858909,
+      "pitch": 0.3043854215478111,
+      "levels": [],
+      "hotspots": []
+    },
+    {
+      "label": "Another Photo 1 (2026/07/09)",
+      "yaw": 0.0,
+      "pitch": 0.0,
+      "levels": [],
+      "hotspots": []
+    },
+    {
+      "label": "Photo 2 (2026/07/09)",
+      "yaw": 0.0,
+      "pitch": 0.0,
+      "levels": [],
+      "hotspots": []
+    },
+    {
+      "label": "More Pics (2026/07/09)",
+      "yaw": 0.0,
+      "pitch": 0.0,
+      "levels": [],
+      "hotspots": []
+    },
+    {
+      "label": "Another one! (2026/07/09)",
+      "yaw": 0.0,
+      "pitch": 0.0,
+      "levels": [],
+      "hotspots": []
+    },
+    {
+      "label": "Another One?!?! (2026/07/09)",
+      "yaw": 0.0,
+      "pitch": 0.0,
+      "levels": [],
+      "hotspots": []
+    },
+    {
+      "label": "Buy your mama a house (2026/07/09)",
+      "yaw": 0.0,
+      "pitch": 0.0,
+      "levels": [],
+      "hotspots": []
+    }
+  ]
+}

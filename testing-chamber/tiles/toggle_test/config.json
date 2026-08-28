@@ -1,0 +1,15 @@
+{
+  "mode": "toggle",
+  "format": "raw",
+  "yaw_1": 0.7436847942747838,
+  "pitch_1": 0.2644173816771409,
+  "yaw_2": 1.3878858211858909,
+  "pitch_2": 0.3043854215478111,
+  "label_1": "The \"Before\" Picture (2026/07/09)",
+  "label_2": "The \"After\" Picture (2026/07/09)",
+  "autorotate": true,
+  "hotspots_1": [],
+  "hotspots_2": [],
+  "levels_1": [],
+  "levels_2": []
+}

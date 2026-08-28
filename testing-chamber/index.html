@@ -140,7 +140,7 @@
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'side_by_side_test';
+    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'time_series_test';
     const siteId = rawSiteId.trim().toLowerCase().replace(/[\s-]+/g, '_');
 
     const isLocalPreview = (location.hostname === '127.0.0.1' || location.hostname === 'localhost');
