@@ -1,0 +1,24 @@
+{
+  "mode": "single",
+  "format": "raw",
+  "yaw_1": 0.6970845032465351,
+  "pitch_1": 0.19949113350295186,
+  "yaw_2": 0.0,
+  "pitch_2": 0.0,
+  "label_1": "Photo 1 (2026/07/09)",
+  "label_2": "",
+  "autorotate": true,
+  "hotspots_1": [
+    {
+      "yaw": 0.3650274230101278,
+      "pitch": 0.2450153336890768,
+      "title": "Surveyor",
+      "text": "yo",
+      "link": "spsseg.org",
+      "category": "note"
+    }
+  ],
+  "hotspots_2": [],
+  "levels_1": [],
+  "levels_2": []
+}

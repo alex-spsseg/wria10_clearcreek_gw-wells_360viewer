@@ -10,19 +10,19 @@
   "autorotate": false,
   "hotspots_1": [
     {
-      "yaw": 0.32365953392464775,
-      "pitch": 0.22929106954709155,
-      "title": "Surveyor",
-      "text": "her name is jessica",
+      "yaw": 0.8117842017751329,
+      "pitch": 0.5766034762088559,
+      "title": "Clear Creek!",
+      "text": "It's still there!",
       "link": "",
-      "category": "measurement"
+      "category": "note"
     },
     {
-      "yaw": 1.7805869784308106,
-      "pitch": 0.9670353487566867,
-      "title": "Well-03",
-      "text": "This is a well",
-      "link": "",
+      "yaw": 0.5567605600831129,
+      "pitch": 0.38157556411797344,
+      "title": "Surveyor",
+      "text": "Named Jessica",
+      "link": "spsseg.org",
       "category": "issue"
     }
   ],

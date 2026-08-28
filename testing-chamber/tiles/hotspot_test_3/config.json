@@ -1,0 +1,32 @@
+{
+  "mode": "single",
+  "format": "raw",
+  "yaw_1": 0.1583013631558857,
+  "pitch_1": 0.30246555937061725,
+  "yaw_2": 0.0,
+  "pitch_2": 0.0,
+  "label_1": "Photo 1 (2026/07/09)",
+  "label_2": "",
+  "autorotate": true,
+  "hotspots_1": [
+    {
+      "yaw": 0.34341929800962134,
+      "pitch": 0.4585857091777932,
+      "title": "Surveyor",
+      "text": "yo",
+      "link": "spsseg.org",
+      "category": "note"
+    },
+    {
+      "yaw": 1.7614529571288013,
+      "pitch": 1.0461188274139008,
+      "title": "Well-03",
+      "text": "Well well well",
+      "link": "",
+      "category": "measurement"
+    }
+  ],
+  "hotspots_2": [],
+  "levels_1": [],
+  "levels_2": []
+}
