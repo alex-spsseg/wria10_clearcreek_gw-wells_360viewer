@@ -135,7 +135,7 @@
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'test_timeseries';
+    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'img_20260709_091518_00_823';
     const siteId = rawSiteId.trim().toLowerCase().replace(/[\s-]+/g, '_');
 
     function showBanner(msg) {
@@ -205,6 +205,7 @@
       tsViews[idx].setParameters(tsViews[tsActiveIdx].parameters());
       tsActiveIdx = idx;
       tsScenes[idx].switchTo();
+      if (isRotating) viewerL.startMovement(autorotate);
       document.getElementById('label-left').innerText = (tsPhotos[idx] && tsPhotos[idx].label) || ('Photo ' + (idx + 1));
       var strip = document.getElementById('timeseries-strip');
       Array.from(strip.children).forEach((child, i) => child.classList.toggle('active', i === idx));
@@ -357,6 +358,7 @@
             toView.setParameters(fromView.parameters());
             showingA = !showingA;
             (showingA ? sceneL : sceneB).switchTo();
+            if (isRotating) viewerL.startMovement(autorotate);
             document.getElementById('label-left').innerText = showingA ? lbl1 : lbl2;
             toggleBtn.textContent = 'Show: ' + (showingA ? lbl2 : lbl1);
           });
