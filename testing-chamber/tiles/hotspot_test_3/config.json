@@ -7,7 +7,7 @@
   "pitch_2": 0.0,
   "label_1": "Photo 1 (2026/07/09)",
   "label_2": "",
-  "autorotate": false,
+  "autorotate": true,
   "hotspots_1": [
     {
       "yaw": 0.34341929800962134,
