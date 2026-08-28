@@ -1,0 +1,24 @@
+{
+  "mode": "single",
+  "format": "raw",
+  "yaw_1": -0.5871287603708925,
+  "pitch_1": 0.5653121447209634,
+  "yaw_2": 0.0,
+  "pitch_2": 0.0,
+  "label_1": "Photo 1 (2026/08/28)",
+  "label_2": "",
+  "autorotate": true,
+  "hotspots_1": [
+    {
+      "yaw": -0.51804840431938,
+      "pitch": 0.7954497486121035,
+      "title": "Murder?",
+      "text": "",
+      "link": "",
+      "category": "issue"
+    }
+  ],
+  "hotspots_2": [],
+  "levels_1": [],
+  "levels_2": []
+}

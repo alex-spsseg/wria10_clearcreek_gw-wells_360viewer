@@ -222,7 +222,7 @@
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'hotspot_test_3';
+    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'drone_shot';
     const siteId = rawSiteId.trim().toLowerCase().replace(/[\s-]+/g, '_');
 
     const isLocalPreview = (location.hostname === '127.0.0.1' || location.hostname === 'localhost');
