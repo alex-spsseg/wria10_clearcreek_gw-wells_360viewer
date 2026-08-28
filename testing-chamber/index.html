@@ -66,6 +66,7 @@
       background: rgba(14, 27, 51, 0.85); color: #ffffff;
       padding: 6px 12px; font-size: 13px; border-radius: 4px;
       border: 1px solid rgba(255, 255, 255, 0.15); pointer-events: none;
+      transition: opacity 0.2s ease;
     }
     #label-right { left: auto; right: 12px; top: 56px; }
 
@@ -127,6 +128,10 @@
 
     <div id="control-bar">
       <button id="toggle-btn" class="ctrl-btn" type="button" style="display:none;">Toggle</button>
+      <button id="use-view-btn" class="ctrl-btn" type="button" style="display:none;">Use This View</button>
+      <button id="unlock-aim-btn" class="ctrl-btn" type="button" style="display:none;">Unlock Independent Aim</button>
+      <button id="use-view-left-btn" class="ctrl-btn" type="button" style="display:none;">Use Left View</button>
+      <button id="use-view-right-btn" class="ctrl-btn" type="button" style="display:none;">Use Right View</button>
       <button id="autorotate-btn" class="ctrl-btn" type="button">Auto-Rotate</button>
       <button id="fullscreen-btn" class="ctrl-btn" type="button">Full Screen</button>
       <button id="reset-btn" class="ctrl-btn" type="button">Reset View</button>
@@ -135,8 +140,28 @@
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'img_20260709_091518_00_823';
+    let rawSiteId = urlParams.get('site') || urlParams.get('well') || 'curtain_test';
     const siteId = rawSiteId.trim().toLowerCase().replace(/[\s-]+/g, '_');
+
+    const isLocalPreview = (location.hostname === '127.0.0.1' || location.hostname === 'localhost');
+    var useViewBtn = document.getElementById('use-view-btn');
+
+    function sendViewCapture(yawRad, pitchRad, photoIndex) {
+      var yawDeg = yawRad * 180 / Math.PI;
+      var pitchDeg = pitchRad * 180 / Math.PI;
+      var original = useViewBtn.textContent;
+      fetch('/__save_view', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ yaw: yawDeg, pitch: pitchDeg, photo_index: photoIndex }),
+      }).then(res => {
+        useViewBtn.textContent = res.ok ? 'Captured!' : 'Failed, try again';
+        setTimeout(() => { useViewBtn.textContent = original; }, 1400);
+      }).catch(() => {
+        useViewBtn.textContent = 'Preview server not reachable';
+        setTimeout(() => { useViewBtn.textContent = original; }, 1800);
+      });
+    }
 
     function showBanner(msg) {
       var b = document.getElementById('status-banner');
@@ -267,6 +292,12 @@
             document.getElementById('label-left').innerText = (tsPhotos[0] && tsPhotos[0].label) || 'Photo 1';
           }
 
+          useViewBtn.addEventListener('click', () => {
+            if (!tsViews.length) return;
+            var v = tsViews[tsActiveIdx].parameters();
+            sendViewCapture(v.yaw, v.pitch, tsActiveIdx);
+          });
+
           setTimeout(() => { viewerL.updateSize(); }, 100);
           window.addEventListener('resize', () => { viewerL.updateSize(); });
 
@@ -329,6 +360,8 @@
 
         sceneL.switchTo();
 
+        var aimLocked = true;
+
         if (!isSingleMode && !isToggleMode) {
           var sceneR = viewerR.createScene({ source: sourceR, geometry: geometryR, view: viewR });
           sceneR.switchTo();
@@ -336,7 +369,7 @@
 
           var isSyncing = false;
           function syncViews(src, tgt) {
-            if (isSyncing) return;
+            if (isSyncing || !aimLocked) return;
             isSyncing = true;
             tgt.setParameters(src.parameters());
             isSyncing = false;
@@ -362,6 +395,39 @@
             document.getElementById('label-left').innerText = showingA ? lbl1 : lbl2;
             toggleBtn.textContent = 'Show: ' + (showingA ? lbl2 : lbl1);
           });
+          if (isLocalPreview) useViewBtn.style.display = 'inline-block';
+          useViewBtn.addEventListener('click', () => {
+            var v = (showingA ? viewL : viewR).parameters();
+            sendViewCapture(v.yaw, v.pitch, showingA ? 0 : 1);
+          });
+        } else if (isSingleMode) {
+          if (isLocalPreview) useViewBtn.style.display = 'inline-block';
+          useViewBtn.addEventListener('click', () => {
+            var v = viewL.parameters();
+            sendViewCapture(v.yaw, v.pitch, 0);
+          });
+        } else {
+          var unlockBtn = document.getElementById('unlock-aim-btn');
+          var useLeftBtn = document.getElementById('use-view-left-btn');
+          var useRightBtn = document.getElementById('use-view-right-btn');
+          if (isLocalPreview) {
+            unlockBtn.style.display = 'inline-block';
+            useLeftBtn.style.display = 'inline-block';
+            useRightBtn.style.display = 'inline-block';
+          }
+          unlockBtn.addEventListener('click', () => {
+            aimLocked = !aimLocked;
+            unlockBtn.textContent = aimLocked ? 'Unlock Independent Aim' : 'Lock Views Together';
+            unlockBtn.classList.toggle('active', !aimLocked);
+          });
+          useLeftBtn.addEventListener('click', () => {
+            var v = viewL.parameters();
+            sendViewCapture(v.yaw, v.pitch, 0);
+          });
+          useRightBtn.addEventListener('click', () => {
+            var v = viewR.parameters();
+            sendViewCapture(v.yaw, v.pitch, 1);
+          });
         }
 
         setTimeout(() => {
@@ -384,12 +450,16 @@
 
     function setupCurtainSlider() {
       let isDragging = false;
+      var labelLeftEl = document.getElementById('label-left');
+      var labelRightEl = document.getElementById('label-right');
 
       function updateWipe(x) {
         let pct = (x / window.innerWidth) * 100;
         pct = Math.max(0, Math.min(100, pct));
         wrapperR.style.width = (100 - pct) + 'vw';
         slider.style.left = pct + 'vw';
+        labelLeftEl.style.opacity = pct < 25 ? '0' : '1';
+        labelRightEl.style.opacity = pct > 75 ? '0' : '1';
       }
 
       slider.addEventListener('mousedown', () => isDragging = true);
